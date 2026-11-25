@@ -1,6 +1,6 @@
 # 扩展 admin-kit 页面：专用 Rust API + 明确 GSI 访问模式
 
-- 适用范围：`admin-kit/`（Soybean Admin + Rust Lambda + DynamoDB）
+- 适用范围：仓库根（Soybean Admin + Rust Lambda + DynamoDB）
 - 编写日期：2026-11-25
 - 参考实现：`api/src/admin.rs`（用户管理）、`web/src/views/users/`
 - 原则一句话：**一个后台页面 = 一组专用 Rust API = 一组明确的 DynamoDB 访问模式；不要做“通用任意表查询后台”。**
@@ -10,10 +10,10 @@
 ## 0. 给执行 Agent 的开工指令（可直接复制）
 
 ```text
-你正在仓库的 admin-kit/ 中新增后台页面：<FEATURE>。
+你正在 admin-kit 仓库中新增后台页面：<FEATURE>。
 
 硬性流程：
-1. 先阅读 admin-kit/docs/EXTENDING-ADMIN-PAGES.md。
+1. 先阅读 docs/EXTENDING-ADMIN-PAGES.md。
 2. 在动手写代码前，先填写 §2 的 Access Pattern Sheet（页面/查询/Key/索引/排序/过滤/分页/写入），
    把它贴到 PR 描述或交付说明里。没有这张表，不允许写 Rust API。
 3. 只实现该页面需要的 API；不要新增通用 filter/sort DSL，不要新增 Scan 权限。
@@ -556,7 +556,7 @@ corepack pnpm build
 
 ## 13. 相关文档
 
-- 后台底座说明：`admin-kit/README.md`
+- 后台底座说明：`README.md`
 - AI 使用说明：`docs/AI-USAGE.md`
 - 模板调研与 DynamoDB 适配分析：`docs/RESEARCH-ADMIN-TEMPLATES.md`
 - Soybean Admin：<https://github.com/soybeanjs/soybean-admin>

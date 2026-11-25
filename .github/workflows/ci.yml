@@ -33,8 +33,6 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 24
-          cache: pnpm
-          cache-dependency-path: web/pnpm-lock.yaml
       - name: Enable Corepack
         run: corepack enable
       - name: Install dependencies
@@ -49,7 +47,7 @@ jobs:
         run: corepack pnpm build
       - name: Check production bundle for demo/mock leftovers
         run: |
-          if grep -RInE 'apifox|mock\.apifox|SoybeanAdmin|123456' dist; then
+          if grep -RInE 'apifox|mock\.apifox|SoybeanAdmin|Super Admin' dist; then
             echo "Unexpected demo/mock content in dist" >&2
             exit 1
           fi

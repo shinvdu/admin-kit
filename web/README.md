@@ -1,5 +1,7 @@
 # Admin Kit (`web`)
 
+**English** | [简体中文](README.zh-CN.md)
+
 Operations console built on [Soybean Admin](https://github.com/soybeanjs/soybean-admin)
 `v2.3.0` (MIT). It is a **standalone** Vite/Vue app; it does not share build
 output or dependencies with the product frontend.

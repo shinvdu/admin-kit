@@ -1,5 +1,7 @@
 # Upstream
 
+**English** | [简体中文](UPSTREAM.zh-CN.md)
+
 - Repository: <https://github.com/soybeanjs/soybean-admin>
 - Tag: `v2.3.0`
 - Commit: `ab40c08992807e303dd8aabb6ec43d7e2334b24f`

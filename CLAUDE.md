@@ -1,5 +1,7 @@
 # CLAUDE.md — admin-kit
 
+**English** | [简体中文](CLAUDE.zh-CN.md)
+
 Read [`AI-PROMPT.md`](AI-PROMPT.md) and [`AGENTS.md`](AGENTS.md) before editing.
 
 ## Project

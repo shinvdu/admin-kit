@@ -1,5 +1,7 @@
 # AGENTS.md — admin-kit
 
+**English** | [简体中文](AGENTS.zh-CN.md)
+
 This file is for AI coding agents (Claude Code, Codex, Cursor, Copilot, etc.).
 Read [`AI-PROMPT.md`](AI-PROMPT.md) first; it contains the canonical prompt and
 the non-negotiable rules. This file is the short operational reference.

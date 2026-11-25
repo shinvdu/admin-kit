@@ -6,8 +6,8 @@ admin-kit 是“AI-first”的后台底座：仓库里同时提供**可直接复
 
 最显眼的入口：
 
-- 根目录 [`AI-PROMPT.md`](../AI-PROMPT.md) —— 可直接复制给任何编码 Agent
-- 根目录 [`AGENTS.md`](../AGENTS.md) —— Claude Code / Codex / Cursor 等通用规则
+- 根目录 [`AI-PROMPT.zh-CN.md`](../AI-PROMPT.zh-CN.md) / [`AI-PROMPT.md`](../AI-PROMPT.md) —— 可直接复制给任何编码 Agent
+- 根目录 [`AGENTS.zh-CN.md`](../AGENTS.zh-CN.md) / [`AGENTS.md`](../AGENTS.md) —— Claude Code / Codex / Cursor 等通用规则
 - 本目录 [`EXTENDING-ADMIN-PAGES.md`](EXTENDING-ADMIN-PAGES.md) —— 新增页面的强制流程
 
 ---
@@ -16,7 +16,7 @@ admin-kit 是“AI-first”的后台底座：仓库里同时提供**可直接复
 
 ### Claude Code
 
-把 `AI-PROMPT.md` 的 fenced prompt 粘到第一条消息，或直接说：
+把 `AI-PROMPT.zh-CN.md` 或 `AI-PROMPT.md` 的 fenced prompt 粘到第一条消息，或直接说：
 
 ```text
 Read AI-PROMPT.md, AGENTS.md and docs/EXTENDING-ADMIN-PAGES.md, then add the
@@ -30,8 +30,8 @@ Claude Code 会自动读取根目录 `CLAUDE.md`；它已指向上述文件。
 这些工具通常识别根目录 `AGENTS.md`。如果没有自动读取，手工把下面三个文件作为上下文：
 
 ```text
-AI-PROMPT.md
-AGENTS.md
+AI-PROMPT.zh-CN.md
+AGENTS.zh-CN.md
 docs/EXTENDING-ADMIN-PAGES.md
 ```
 

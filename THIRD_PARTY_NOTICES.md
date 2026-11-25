@@ -1,5 +1,7 @@
 # Third-party notices
 
+**English** | [简体中文](THIRD_PARTY_NOTICES.zh-CN.md)
+
 admin-kit’s own code is MIT-licensed (see `LICENSE`). It depends on and vendors
 the following open-source projects.
 

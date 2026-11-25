@@ -1,5 +1,7 @@
 # admin-kit
 
+**English** | [简体中文](README.zh-CN.md)
+
 [![CI](https://github.com/shinvdu/admin-kit/actions/workflows/ci.yml/badge.svg)](https://github.com/shinvdu/admin-kit/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
@@ -227,8 +229,8 @@ Errors use HTTP status + JSON. See [`docs/API.md`](docs/API.md).
 
 ## AI usage
 
-- **Prompt**: [`AI-PROMPT.md`](AI-PROMPT.md)
-- **Agent rules**: [`AGENTS.md`](AGENTS.md)
+- **Prompt**: [`AI-PROMPT.md`](AI-PROMPT.md) / [`AI-PROMPT.zh-CN.md`](AI-PROMPT.zh-CN.md)
+- **Agent rules**: [`AGENTS.md`](AGENTS.md) / [`AGENTS.zh-CN.md`](AGENTS.zh-CN.md)
 - **Detailed guide**: [`docs/AI-USAGE.md`](docs/AI-USAGE.md)
 - **Adding pages**: [`docs/EXTENDING-ADMIN-PAGES.md`](docs/EXTENDING-ADMIN-PAGES.md)
 - **Copilot**: [`.github/copilot-instructions.md`](.github/copilot-instructions.md)

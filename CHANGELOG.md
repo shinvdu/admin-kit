@@ -1,5 +1,7 @@
 # Changelog
 
+**English** | [简体中文](CHANGELOG.zh-CN.md)
+
 ## 0.1.0 — 2026-11-25
 
 - Initial open-source release.

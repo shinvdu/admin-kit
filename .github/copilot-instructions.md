@@ -1,5 +1,7 @@
 # GitHub Copilot instructions — admin-kit
 
+**English** | [简体中文](copilot-instructions.zh-CN.md)
+
 This is a Soybean Admin + Rust Lambda + DynamoDB + CloudFront admin starter.
 
 ## Read first

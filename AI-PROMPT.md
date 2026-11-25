@@ -1,5 +1,7 @@
 # AI Prompt — copy this into your agent
 
+**English** | [简体中文](AI-PROMPT.zh-CN.md)
+
 > This file is the canonical prompt for AI coding agents using admin-kit.
 > It is intentionally explicit: the repository is designed to be safe for agents
 > to extend without turning DynamoDB into a fake SQL database.

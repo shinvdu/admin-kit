@@ -2,6 +2,11 @@
 
 **English** | [简体中文](CHANGELOG.zh-CN.md)
 
+## 0.1.1 — 2026-11-25
+
+- Add Simplified Chinese translations for the main docs and agent instructions.
+- Add Chinese Copilot instructions and language switch links.
+
 ## 0.1.0 — 2026-11-25
 
 - Initial open-source release.

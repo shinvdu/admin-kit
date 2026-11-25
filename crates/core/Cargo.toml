@@ -1,0 +1,27 @@
+[package]
+name = "admin-kit-core"
+version.workspace = true
+edition.workspace = true
+description = "admin-kit runtime core: config, JWT/API-key auth, AppError, axum defaults, Lambda/local bootstrap"
+license.workspace = true
+
+[dependencies]
+axum.workspace = true
+tokio.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+tracing.workspace = true
+tracing-subscriber.workspace = true
+tower-http.workspace = true
+rand.workspace = true
+anyhow.workspace = true
+thiserror.workspace = true
+aws-config.workspace = true
+aws-sdk-ssm.workspace = true
+ed25519-dalek.workspace = true
+base64.workspace = true
+subtle.workspace = true
+
+[dev-dependencies]
+tower = { workspace = true, features = ["util"] }
+http-body-util.workspace = true

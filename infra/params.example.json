@@ -1,0 +1,8 @@
+{
+  "Project": "admin-kit",
+  "Environment": "dev",
+  "LambdaArchitecture": "x86_64",
+  "LambdaMemoryMB": "256",
+  "WebAdapterLayerArn": "arn:aws:lambda:us-west-2:753240598075:layer:LambdaAdapterLayerX86:28",
+  "AdminEmail": "admin@example.com"
+}

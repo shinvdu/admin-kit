@@ -1,0 +1,336 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: admin-kit - standalone Soybean Admin + Rust Lambda + DynamoDB + CloudFront
+
+# 独立后台底座：
+#   CloudFront (默认域名)
+#     ├─ /api/*   → Lambda Function URL (OAC, SigV4)
+#     ├─ /health  → Lambda Function URL
+#     ├─ /assets/* → S3 (长缓存)
+#     └─ 默认      → S3 (index.html, no-cache)
+#
+# 不使用自定义域名/ACM；首次部署后使用 CloudFront 默认域名。
+# 密钥全部在 SSM：/admin-kit/dev/{jwt_seed,admin_email,admin_password}
+
+Parameters:
+  Project:
+    Type: String
+    Default: admin-kit
+    AllowedPattern: "^[a-z][a-z0-9-]{1,30}$"
+  Environment:
+    Type: String
+    Default: dev
+    AllowedPattern: "^[a-z][a-z0-9-]{1,15}$"
+  LambdaArchitecture:
+    Type: String
+    Default: x86_64
+    AllowedValues: [x86_64, arm64]
+  LambdaMemoryMB:
+    Type: Number
+    Default: 256
+    MinValue: 128
+    MaxValue: 10240
+  CodeBucket:
+    Type: String
+    Description: bootstrap.zip 所在部署桶（deploy.sh 注入）
+    AllowedPattern: "^[a-z0-9][a-z0-9.-]{1,61}[a-z0-9]$"
+  CodeKey:
+    Type: String
+    Description: bootstrap.zip 的 S3 key（deploy.sh 注入）
+  WebAdapterLayerArn:
+    Type: String
+    Default: "arn:aws:lambda:us-west-2:753240598075:layer:LambdaAdapterLayerX86:28"
+    Description: AWS Lambda Web Adapter layer ARN（与区域/架构绑定）
+
+Resources:
+  # ---------- DynamoDB：账号单表 ----------
+  UsersTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub "${Project}-${Environment}-users"
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - { AttributeName: pk, AttributeType: S }
+        - { AttributeName: sk, AttributeType: S }
+        - { AttributeName: gsi1pk, AttributeType: S }
+        - { AttributeName: gsi1sk, AttributeType: S }
+      KeySchema:
+        - { AttributeName: pk, KeyType: HASH }
+        - { AttributeName: sk, KeyType: RANGE }
+      GlobalSecondaryIndexes:
+        - IndexName: gsi1
+          KeySchema:
+            - { AttributeName: gsi1pk, KeyType: HASH }
+            - { AttributeName: gsi1sk, KeyType: RANGE }
+          Projection:
+            ProjectionType: INCLUDE
+            NonKeyAttributes:
+              - id
+              - owner
+              - email
+              - role
+              - disabled
+              - session_version
+              - created_at
+              - updated_at
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: true
+      Tags:
+        - Key: project
+          Value: !Ref Project
+        - Key: environment
+          Value: !Ref Environment
+
+  # ---------- S3：前端静态资源（私有 + OAC） ----------
+  FrontendBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub "${Project}-${Environment}-frontend"
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      VersioningConfiguration:
+        Status: Enabled
+      Tags:
+        - Key: project
+          Value: !Ref Project
+
+  FrontendBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref FrontendBucket
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: cloudfront.amazonaws.com
+            Action: s3:GetObject
+            Resource: !Sub "arn:aws:s3:::${FrontendBucket}/*"
+            Condition:
+              StringEquals:
+                "AWS:SourceArn": !Sub "arn:aws:cloudfront::${AWS::AccountId}:distribution/${Distribution}"
+
+  # ---------- IAM ----------
+  LambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal: { Service: lambda.amazonaws.com }
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: !Sub "${Project}-${Environment}-api-policy"
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Sid: Logs
+                Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: "*"
+              - Sid: UsersTable
+                Effect: Allow
+                Action:
+                  - dynamodb:GetItem
+                  - dynamodb:PutItem
+                  - dynamodb:UpdateItem
+                  - dynamodb:DeleteItem
+                  - dynamodb:Query
+                  - dynamodb:TransactWriteItems
+                Resource:
+                  - !GetAtt UsersTable.Arn
+                  - !Sub "${UsersTable.Arn}/index/*"
+              - Sid: SSMSecrets
+                Effect: Allow
+                Action:
+                  - ssm:GetParametersByPath
+                  - ssm:GetParameter
+                Resource: !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${Project}/${Environment}/*"
+              - Sid: SSMDecrypt
+                Effect: Allow
+                Action: kms:Decrypt
+                Resource: !Sub "arn:aws:kms:${AWS::Region}:${AWS::AccountId}:alias/aws/ssm"
+      Tags:
+        - Key: project
+          Value: !Ref Project
+
+  # ---------- Lambda：admin-kit-api ----------
+  ApiFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub "${Project}-${Environment}-api"
+      Runtime: provided.al2023
+      Handler: bootstrap
+      Architectures:
+        - !Ref LambdaArchitecture
+      MemorySize: !Ref LambdaMemoryMB
+      Timeout: 55
+      Role: !GetAtt LambdaRole.Arn
+      Code:
+        S3Bucket: !Ref CodeBucket
+        S3Key: !Ref CodeKey
+      Layers:
+        - !Ref WebAdapterLayerArn
+      Environment:
+        Variables:
+          # admin-kit-core 读取的通用配置（本项目沿用，避免复制一份配置层）
+          ADMIN_KIT_PROJECT: !Ref Project
+          ADMIN_KIT_ENV: !Ref Environment
+          ADMIN_KIT_SECRETS_PATH: !Sub "/${Project}/${Environment}/"
+          ADMIN_KIT_TABLE_PREFIX: !Sub "${Project}-${Environment}-"
+          ADMIN_KIT_ENABLE_EMAIL_AUTH: "true"
+          ADMIN_KIT_ENABLE_SIGNUP: "false"
+          ADMIN_KIT_COOKIE_SECURE: "true"
+          # admin-kit-api 自己的表名
+          ADMIN_KIT_TABLE: !Ref UsersTable
+          RUST_LOG: "info,aws_config=warn,aws_smithy=warn"
+          PORT: "8080"
+      Tags:
+        - Key: project
+          Value: !Ref Project
+
+  ApiFunctionUrl:
+    Type: AWS::Lambda::Url
+    Properties:
+      TargetFunctionArn: !Ref ApiFunction
+      AuthType: AWS_IAM
+      Cors:
+        AllowOrigins: ["*"]
+        AllowMethods: ["*"]
+        AllowHeaders: ["*"]
+
+  # OAC 需要两条权限，缺任一都会 403
+  ApiFunctionUrlInvokePermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunctionUrl
+      FunctionName: !Ref ApiFunction
+      Principal: cloudfront.amazonaws.com
+      SourceArn: !Sub "arn:aws:cloudfront::${AWS::AccountId}:distribution/${Distribution}"
+      FunctionUrlAuthType: AWS_IAM
+
+  ApiFunctionInvokePermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !Ref ApiFunction
+      Principal: cloudfront.amazonaws.com
+      SourceArn: !Sub "arn:aws:cloudfront::${AWS::AccountId}:distribution/${Distribution}"
+
+  # ---------- OAC ----------
+  LambdaOriginAccessControl:
+    Type: AWS::CloudFront::OriginAccessControl
+    Properties:
+      OriginAccessControlConfig:
+        Name: !Sub "${Project}-${Environment}-lambda-oac"
+        OriginAccessControlOriginType: lambda
+        SigningBehavior: always
+        SigningProtocol: sigv4
+
+  S3OriginAccessControl:
+    Type: AWS::CloudFront::OriginAccessControl
+    Properties:
+      OriginAccessControlConfig:
+        Name: !Sub "${Project}-${Environment}-s3-oac"
+        OriginAccessControlOriginType: s3
+        SigningBehavior: always
+        SigningProtocol: sigv4
+
+  # ---------- CloudFront ----------
+  Distribution:
+    Type: AWS::CloudFront::Distribution
+    Properties:
+      DistributionConfig:
+        Comment: !Sub "${Project}-${Environment} admin console"
+        Enabled: true
+        PriceClass: PriceClass_100
+        HttpVersion: http2
+        DefaultRootObject: index.html
+        ViewerCertificate:
+          CloudFrontDefaultCertificate: true
+        Origins:
+          - Id: LambdaOrigin
+            DomainName: !Select [2, !Split ["/", !GetAtt ApiFunctionUrl.FunctionUrl]]
+            OriginAccessControlId: !Ref LambdaOriginAccessControl
+            CustomOriginConfig:
+              OriginProtocolPolicy: https-only
+              OriginReadTimeout: 60
+              OriginKeepaliveTimeout: 5
+          - Id: FrontendOrigin
+            DomainName: !GetAtt FrontendBucket.RegionalDomainName
+            OriginAccessControlId: !Ref S3OriginAccessControl
+            S3OriginConfig: {}
+        CacheBehaviors:
+          - PathPattern: /health
+            TargetOriginId: LambdaOrigin
+            ViewerProtocolPolicy: redirect-to-https
+            Compress: true
+            CachePolicyId: 4135ea2d-6df8-44a3-9df3-4b5a84be39ad
+            OriginRequestPolicyId: b689b0a8-53d0-40ab-baf2-68738e2966ac
+            AllowedMethods: [GET, HEAD, OPTIONS]
+            CachedMethods: [GET, HEAD]
+          - PathPattern: /api/*
+            TargetOriginId: LambdaOrigin
+            ViewerProtocolPolicy: redirect-to-https
+            Compress: true
+            CachePolicyId: 4135ea2d-6df8-44a3-9df3-4b5a84be39ad
+            OriginRequestPolicyId: b689b0a8-53d0-40ab-baf2-68738e2966ac
+            AllowedMethods:
+              - DELETE
+              - GET
+              - HEAD
+              - OPTIONS
+              - PATCH
+              - POST
+              - PUT
+            CachedMethods: [GET, HEAD]
+          # Vite 带 hash 的 assets 长缓存
+          - PathPattern: /assets/*
+            TargetOriginId: FrontendOrigin
+            ViewerProtocolPolicy: redirect-to-https
+            Compress: true
+            CachePolicyId: 658327ea-f89d-4fab-a63d-7e88639e58f6
+            AllowedMethods: [GET, HEAD, OPTIONS]
+            CachedMethods: [GET, HEAD]
+        DefaultCacheBehavior:
+          TargetOriginId: FrontendOrigin
+          ViewerProtocolPolicy: redirect-to-https
+          Compress: true
+          # HTML 不缓存；S3 对象也设置了 no-cache
+          CachePolicyId: 4135ea2d-6df8-44a3-9df3-4b5a84be39ad
+          AllowedMethods: [GET, HEAD, OPTIONS]
+          CachedMethods: [GET, HEAD]
+      Tags:
+        - Key: project
+          Value: !Ref Project
+        - Key: environment
+          Value: !Ref Environment
+
+Outputs:
+  SiteUrl:
+    Description: 后台站点 URL（CloudFront 默认域名）
+    Value: !Sub "https://${Distribution.DomainName}"
+
+  CloudFrontDomain:
+    Value: !GetAtt Distribution.DomainName
+
+  DistributionId:
+    Value: !Ref Distribution
+
+  UsersTableName:
+    Value: !Ref UsersTable
+
+  FrontendBucket:
+    Value: !Ref FrontendBucket
+
+  FunctionUrl:
+    Value: !GetAtt ApiFunctionUrl.FunctionUrl
+
+  SecretsPath:
+    Value: !Sub "/${Project}/${Environment}/"

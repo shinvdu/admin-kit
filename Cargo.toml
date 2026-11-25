@@ -1,0 +1,44 @@
+[workspace]
+resolver = "2"
+members = [
+    "crates/core",
+    "crates/dynamo",
+    "api",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.75"
+license = "MIT"
+
+[workspace.dependencies]
+# Web / runtime
+axum = "0.8"
+tokio = { version = "1", features = ["rt-multi-thread", "macros", "signal", "net", "time"] }
+tower = { version = "0.5", features = ["util"] }
+tower-http = { version = "0.6", features = ["cors", "request-id", "trace"] }
+http-body-util = "0.1"
+
+# Serialization / misc
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
+anyhow = "1"
+thiserror = "2"
+async-trait = "0.1.92"
+uuid = { version = "1", features = ["v4"] }
+rand = { version = "0.8", features = ["getrandom"] }
+
+# Crypto / auth
+argon2 = "0.5"
+ed25519-dalek = "2"
+base64 = "0.23.1"
+subtle = "2"
+
+# AWS
+aws-config = "1.10.1"
+aws-sdk-ssm = "1.118.0"
+aws-sdk-dynamodb = "1.120.0"
+serde_dynamo = { version = "4.3.0", features = ["aws-sdk-dynamodb+1"] }

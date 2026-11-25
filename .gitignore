@@ -1,0 +1,32 @@
+# Credentials / local deploy config — never commit
+.env
+!.env.example
+infra/params.json
+account.txt
+password.txt
+*.pem
+*.key
+
+# Build output
+target/
+node_modules/
+web/node_modules/
+web/dist/
+
+# Local frontend overrides
+web/.env.local
+
+# Frontend template config is public (no secrets) and must be committed;
+# re-include it after the global .env rules above.
+!web/.env
+!web/.env.test
+!web/.env.prod
+
+# Editor / OS
+.DS_Store
+.idea/
+.vscode/
+
+# Logs / temp
+*.log
+.DS_Store
